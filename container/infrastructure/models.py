@@ -1,5 +1,5 @@
 from peewee import Model, AutoField, CharField, FloatField, DateTimeField
-from shared.infrastructure.database import db
+from src.shared.infrastructure.database import db
 
 
 class ContainerRecord(Model):
