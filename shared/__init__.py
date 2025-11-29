@@ -1,1 +1,1 @@
-# Empty file to make container a Python package
+# Shared infrastructure components
