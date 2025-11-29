@@ -1,3 +1,15 @@
-flask~=3.1.1
+# Web Framework
+flask==3.1.2
+flask-cors==6.0.1
+
+# MQTT Client
+paho-mqtt==2.1.0
+
+# Database
+peewee==3.18.3
+
+# Configuration
+python-dotenv==1.2.1
+
+# Utilities
 python-dateutil==2.9.0.post0
-peewee==3.18.2
