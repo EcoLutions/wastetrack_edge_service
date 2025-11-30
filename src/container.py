@@ -83,14 +83,14 @@ class Container:
             self.mqtt_publisher
         )
 
-        logger.info("✅ Application container initialized")
+        logger.info("Application container initialized")
 
     def _ensure_database_connected(self):
         """Ensure database is connected and tables exist"""
         try:
             if self._database.is_closed():
                 self._database.connect()
-            logger.info("✅ Database connected")
+            logger.info("Database connected")
         except Exception as e:
             logger.error(f"Database connection failed: {e}", exc_info=True)
             raise
@@ -113,7 +113,7 @@ class Container:
         # Subscribe to Backend events
         self.mqtt_subscriber.subscribe_to_backend_events()
 
-        logger.info("✅ MQTT started and subscribed")
+        logger.info("MQTT started and subscribed")
 
     def shutdown(self):
         """Gracefully shutdown all components"""
@@ -128,4 +128,4 @@ class Container:
         if not self._database.is_closed():
             self._database.close()
 
-        logger.info("✅ Application shutdown complete")
+        logger.info("Application shutdown complete")

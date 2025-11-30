@@ -70,7 +70,7 @@ def create_flask_app(container: Container) -> Flask:
             }
         }), 200
 
-    logger.info("✅ Flask app created")
+    logger.info("Flask app created")
     return app
 
 
@@ -107,19 +107,6 @@ def main():
     logger.info("=" * 80)
     logger.info(f"Starting Flask server on {AppConfig.FLASK_HOST}:{AppConfig.FLASK_PORT}")
     logger.info(f"Debug mode: {AppConfig.FLASK_DEBUG}")
-    logger.info("=" * 80)
-    logger.info("")
-    logger.info("Available endpoints:")
-    logger.info("  - POST   /api/v1/sensor-readings (publishes immediately to MQTT)")
-    logger.info("  - GET    /api/v1/sensor-readings/pending")
-    logger.info("  - GET    /api/v1/sensor-readings/alerts")
-    logger.info("  - GET    /health")
-    logger.info("  - GET    /info")
-    logger.info("")
-    logger.info("Mode: All readings published IMMEDIATELY to MQTT")
-    logger.info("  - Alerts → cm/sensors/alerts/full")
-    logger.info("  - Normal → cm/sensors/readings/batch")
-    logger.info("")
     logger.info("=" * 80)
 
     try:
