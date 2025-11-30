@@ -6,13 +6,13 @@ load_dotenv()
 
 class MqttConfig:
     """
-    Configuration MQTT to set connection Edge ↔ Backend
+    Configuration MQTT to set connection Edge <-> Backend
 
     Topics Structure:
-    - cm/devices/events/created           → Backend publish device created
-    - cm/containers/events/config/updated → Backend publish container config updated
-    - cm/sensors/alerts/full              → Edge publish full sensor alerts
-    - cm/sensors/readings/batch           → Edge publish batch sensor readings
+    - cm/devices/events/created           -> Backend publish device created
+    - cm/containers/events/config/updated -> Backend publish container config updated
+    - cm/sensors/alerts/full              -> Edge publish full sensor alerts
+    - cm/sensors/readings/batch           -> Edge publish batch sensor readings
     """
 
     # ========================================

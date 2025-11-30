@@ -1,0 +1,1 @@
+# Interfaces layer - REST API, WebSockets, etc.

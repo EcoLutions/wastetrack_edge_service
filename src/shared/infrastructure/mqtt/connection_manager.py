@@ -14,8 +14,8 @@ class MqttConnectionManager:
 
     Responsibilities:
         - Connect/disconnect from the MQTT broker
-        - Subscribe to topics (Backend → Edge)
-        - Publish messages (Edge → Backend)
+        - Subscribe to topics (Backend -> Edge)
+        - Publish messages (Edge -> Backend)
         - Automatic reconnection if connection is lost
         - Routing messages to specific handlers
         - Support for MQTT wildcards (+ and #)
@@ -102,9 +102,9 @@ class MqttConnectionManager:
         if result[0] == mqtt.MQTT_ERR_SUCCESS:
             # Registrar handler
             self.message_handlers[topic] = handler
-            logger.info(f"✅ Subscribed to topic: {topic}")
+            logger.info(f"Subscribed to topic: {topic}")
         else:
-            logger.error(f"❌ Failed to subscribe to topic: {topic}")
+            logger.error(f"Failed to subscribe to topic: {topic}")
 
     def publish(self, topic: str, payload: dict, retain: bool = False) -> bool:
         """
@@ -137,11 +137,11 @@ class MqttConnectionManager:
 
             # Check result
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                logger.info(f"✅ Published to {topic}")
+                logger.info(f"Published to {topic}")
                 logger.debug(f"   Payload: {payload_str[:200]}...")
                 return True
             else:
-                logger.error(f"❌ Failed to publish to {topic}: rc={result.rc}")
+                logger.error(f"Failed to publish to {topic}: rc={result.rc}")
                 return False
 
         except Exception as e:
@@ -163,12 +163,13 @@ class MqttConnectionManager:
         if rc == 0:
             self.connected = True
             self.reconnecting = False
-            logger.info("✅ MQTT connection successful")
+            logger.info("MQTT connection successful")
 
             # Re-subscribe to all registered topics
             if self.message_handlers:
                 logger.info("Re-subscribing to registered topics...")
-                for topic in self.message_handlers.keys():
+                # Copy keys to avoid mutation during iteration if handlers change
+                for topic in list(self.message_handlers.keys()):
                     self.client.subscribe(topic, qos=MqttConfig.QOS_SUBSCRIBE)
                     logger.info(f"   Re-subscribed: {topic}")
         else:
@@ -181,7 +182,7 @@ class MqttConnectionManager:
                 5: "Not authorized"
             }
             error_msg = error_messages.get(rc, f"Unknown error code: {rc}")
-            logger.error(f"❌ MQTT connection failed: {error_msg}")
+            logger.error(f"MQTT connection failed: {error_msg}")
             self._schedule_reconnect()
 
     def _on_disconnect(self, client, userdata, rc):
@@ -194,7 +195,7 @@ class MqttConnectionManager:
         self.connected = False
 
         if rc != 0:
-            logger.warning(f"⚠️  Unexpected MQTT disconnect (rc={rc})")
+            logger.warning(f"Unexpected MQTT disconnect (rc={rc})")
             self._schedule_reconnect()
         else:
             logger.info("MQTT disconnected normally")
@@ -224,7 +225,7 @@ class MqttConnectionManager:
                 logger.error(f"Raw payload: {payload_str[:500]}")
                 return
 
-            logger.info(f"📨 Received message on: {topic}")
+            logger.info(f"Received message on: {topic}")
             logger.debug(f"   Payload: {payload_str[:200]}...")
 
             # Search for handler matching topic
@@ -260,12 +261,12 @@ class MqttConnectionManager:
 
         Examples:
             topic="cm/devices/events/created"
-            pattern="cm/devices/events/created" → Match
-            pattern="cm/devices/events/+" → Match
-            pattern="cm/devices/#" → Match
-            pattern="cm/containers/+" → No Match
+            pattern="cm/devices/events/created" -> Match
+            pattern="cm/devices/events/+" -> Match
+            pattern="cm/devices/#" -> Match
+            pattern="cm/containers/+" -> No Match
         """
-        # First search for exact match
+        # First search for the exact match
         if topic in self.message_handlers:
             return self.message_handlers[topic]
 
@@ -281,9 +282,9 @@ class MqttConnectionManager:
         Check if a topic matches a pattern (MQTT wildcards)
 
         Wildcards:
-            + : single level wildcard
+            +: single level wildcard
                 Example: "cm/devices/+" matches "cm/devices/events"
-            # : multi level wildcard (debe ser el último)
+            #: multi level wildcard (should be the last)
                 Example: "cm/#" matches "cm/devices/events/created"
 
         Args:
