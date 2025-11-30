@@ -35,10 +35,10 @@ class ContainerConfigHandler:
         Handle ContainerConfigUpdatedEvent from Backend
 
         Flow:
-        1. Parse MQTT payload → ContainerConfigUpdatedEvent
+        1. Parse MQTT payload -> ContainerConfigUpdatedEvent
         2. Check if config already exists
-        3. If exists → Update a threshold
-        4. If not exists → Create new config
+        3. If exists -> Update a threshold
+        4. If not exists -> Create new config
         5. Save to SQLite
 
         Args:
@@ -77,7 +77,7 @@ class ContainerConfigHandler:
                 # Update sensor_id if changed
                 if existing_config.sensor_id != event.sensor_id:
                     logger.info(
-                        f"  Sensor ID changed: {existing_config.sensor_id} → "
+                        f" Sensor ID changed: {existing_config.sensor_id} -> "
                         f"{event.sensor_id}"
                     )
                     # Create a new config with updated sensor_id
@@ -92,7 +92,7 @@ class ContainerConfigHandler:
                     self.container_config_repository.save(existing_config)
 
                 logger.info(
-                    f"✅ ContainerConfig updated: {event.container_id} "
+                    f"ContainerConfig updated: {event.container_id} "
                     f"(threshold={event.max_fill_level_threshold}%)"
                 )
             else:
@@ -111,7 +111,7 @@ class ContainerConfigHandler:
                 self.container_config_repository.save(config)
 
                 logger.info(
-                    f"✅ ContainerConfig created: {config.container_id} "
+                    f"ContainerConfig created: {config.container_id} "
                     f"(threshold={config.max_fill_level_threshold}%, "
                     f"sensor={config.sensor_id})"
                 )

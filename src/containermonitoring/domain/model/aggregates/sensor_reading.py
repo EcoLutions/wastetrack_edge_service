@@ -122,9 +122,9 @@ class SensorReading:
         }
 
     def __repr__(self) -> str:
-        alert_indicator = " 🚨" if self.is_alert else ""
+        alert_indicator = " [ALERT]" if self.is_alert else ""
         return (
             f"SensorReading(container='{self.container_id}', "
             f"fill={self.fill_level_percentage}%, "
-            f"temp={self.temperature_celsius}°C{alert_indicator})"
+            f"temp={self.temperature_celsius}degC{alert_indicator})"
         )

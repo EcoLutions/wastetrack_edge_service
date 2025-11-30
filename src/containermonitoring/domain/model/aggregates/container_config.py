@@ -52,7 +52,7 @@ class ContainerConfig:
 
     def is_full(self, fill_level_percentage: float) -> bool:
         """
-        Determines whether a fill level is considered “full.”
+        Determines whether a fill level is considered "full."
 
         Args:
             fill_level_percentage: Current fill level (0-100)

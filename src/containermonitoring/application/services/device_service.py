@@ -34,8 +34,8 @@ class DeviceService:
 
         Flow:
         1. Look up device by identifier in SQLite
-        2. If found → Device is authenticated
-        3. If not found → Device is not authenticated
+        2. If found -> Device is authenticated
+        3. If not found -> Device is not authenticated
 
         Args:
             device_identifier: Unique identifier from IoT (e.g., "SENSOR-001")
@@ -48,10 +48,10 @@ class DeviceService:
         device = self.device_repository.find_by_identifier(device_identifier)
 
         if device:
-            logger.info(f"✅ Device authenticated: {device_identifier}")
+            logger.info(f"[OK] Device authenticated: {device_identifier}")
             return device
         else:
-            logger.warning(f"❌ Device not found: {device_identifier}")
+            logger.warning(f"[ERR] Device not found: {device_identifier}")
             return None
 
     def get_device_by_id(self, device_id: str) -> Optional[Device]:

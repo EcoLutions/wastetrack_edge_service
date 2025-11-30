@@ -36,7 +36,7 @@ class DeviceEventHandler:
         Handle DeviceCreatedEvent from Backend
 
         Flow:
-        1. Parse MQTT payload → DeviceCreatedEvent
+        1. Parse MQTT payload -> DeviceCreatedEvent
         2. Create Device aggregate from event
         3. Check if a device already exists (idempotency)
         4. Save to SQLite
@@ -80,7 +80,7 @@ class DeviceEventHandler:
                 self.device_repository.save(device)
 
                 logger.info(
-                    f"✅ Device created and saved: {device.device_identifier} "
+                    f"[OK] Device created and saved: {device.device_identifier} "
                     f"(ID: {device.device_id})"
                 )
 

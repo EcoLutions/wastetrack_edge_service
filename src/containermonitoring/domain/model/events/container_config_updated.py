@@ -21,8 +21,8 @@ class ContainerConfigUpdatedEvent:
     }
 
     The maxFillLevelThreshold determines when a reading becomes an alert:
-    - fillLevel >= maxFillLevelThreshold → ALERT
-    - fillLevel < maxFillLevelThreshold → Normal reading
+    - fillLevel >= maxFillLevelThreshold -> ALERT
+    - fillLevel < maxFillLevelThreshold -> Normal reading
     """
 
     container_id: str

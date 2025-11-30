@@ -83,7 +83,7 @@ class SensorReadingRepository:
 
             reading.id = model.id
 
-            alert_indicator = " 🚨" if reading.is_alert else ""
+            alert_indicator = " [ALERT]" if reading.is_alert else ""
             logger.info(
                 f"SensorReading saved: ID={model.id}, "
                 f"container={reading.container_id}, "

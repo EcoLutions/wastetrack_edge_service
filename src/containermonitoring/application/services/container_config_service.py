@@ -75,8 +75,8 @@ class ContainerConfigService:
         Determine if a fill level should trigger an alert
 
         Business rule:
-        - fillLevel >= threshold → ALERT
-        - fillLevel < threshold → Normal
+        - fillLevel >= threshold -> ALERT
+        - fillLevel < threshold -> Normal
 
         Args:
             container_id: UUID of the container
@@ -98,7 +98,7 @@ class ContainerConfigService:
 
         if is_alert:
             logger.info(
-                f"🚨 ALERT: Container {container_id} at {fill_level_percentage}% "
+                f"[ALERT] ALERT: Container {container_id} at {fill_level_percentage}% "
                 f"(threshold: {config.max_fill_level_threshold}%)"
             )
         else:
