@@ -39,9 +39,9 @@ class SensorReadingHandler:
             )
 
             if success:
-                logger.info(f"✅ Processed reading from {device_identifier}")
+                logger.info(f"Processed reading from {device_identifier}")
             else:
-                logger.warning(f"❌ Failed to process reading from {device_identifier}")
+                logger.warning(f"Failed to process reading from {device_identifier}")
 
         except Exception as e:
             logger.error(
