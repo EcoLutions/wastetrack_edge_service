@@ -48,7 +48,7 @@ class SerialClient:
                 )
 
                 self.is_connected = True
-                logger.info(f"✅ Connected to {self.port}")
+                logger.info(f"Connected to {self.port}")
                 return True
 
             except serial.SerialException as e:
@@ -58,7 +58,7 @@ class SerialClient:
                     logger.info(f"Retrying in {BluetoothConfig.RETRY_DELAY}s...")
                     time.sleep(BluetoothConfig.RETRY_DELAY)
                 else:
-                    logger.error(f"❌ Failed to connect to {self.port} after {BluetoothConfig.MAX_RETRIES} attempts")
+                    logger.error(f"Failed to connect to {self.port} after {BluetoothConfig.MAX_RETRIES} attempts")
 
             except Exception as e:
                 logger.error(f"Unexpected error connecting to {self.port}: {e}", exc_info=True)

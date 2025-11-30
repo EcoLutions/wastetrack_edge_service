@@ -68,7 +68,7 @@ class BluetoothPollingWorker:
         )
         self.thread.start()
 
-        logger.info("✅ Bluetooth Polling Worker started")
+        logger.info("Bluetooth Polling Worker started")
 
     def stop(self):
         """Stop the polling worker"""
@@ -82,7 +82,7 @@ class BluetoothPollingWorker:
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=10)
 
-        logger.info("✅ Bluetooth Polling Worker stopped")
+        logger.info("Bluetooth Polling Worker stopped")
 
     def _run_loop(self):
         """Main polling loop"""
