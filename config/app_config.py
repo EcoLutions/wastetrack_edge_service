@@ -22,6 +22,14 @@ class AppConfig:
     LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     LOG_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
+    # Bluetooth configuration
+    BLUETOOTH_POLLING_INTERVAL = int(os.getenv('BLUETOOTH_POLLING_INTERVAL', 10))
+    BLUETOOTH_TIMEOUT = int(os.getenv('BLUETOOTH_TIMEOUT', 5))
+    BLUETOOTH_BAUD_RATE = int(os.getenv('BLUETOOTH_BAUD_RATE', 115200))
+    BLUETOOTH_CONFIG_RELOAD_CYCLES = int(os.getenv('BLUETOOTH_CONFIG_RELOAD_CYCLES', 5))
+    BLUETOOTH_MAX_RETRIES = int(os.getenv('BLUETOOTH_MAX_RETRIES', 3))
+    BLUETOOTH_RETRY_DELAY = int(os.getenv('BLUETOOTH_RETRY_DELAY', 2))
+
     @classmethod
     def get_log_level(cls):
         """Convert string log level to logging constant"""
