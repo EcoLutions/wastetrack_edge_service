@@ -20,6 +20,7 @@ class SensorReadingService:
     - Process incoming sensor readings from IoT
     - Determine if readings are alerts based on thresholds
     - Persist readings to SQLite
+    - Return readings for immediate MQTT publishing (no batch worker)
     - Manage sync status to Backend
     - Orchestrate business logic across aggregates
     """
@@ -60,7 +61,7 @@ class SensorReadingService:
         3. Determine if reading is an alert
         4. Create SensorReading aggregate
         5. Persist to SQLite
-        6. Return reading for potential MQTT publishing
+        6. Return reading for immediate MQTT publishing
 
         Args:
             device_identifier: Unique identifier from IoT (e.g., "SENSOR-001")
@@ -141,7 +142,7 @@ class SensorReadingService:
         """
         Get readings that need to be synced to Backend
 
-        Used by a background worker for batch sync.
+        Note: Without a background worker, this is mainly for debugging/monitoring
 
         Args:
             limit: Maximum number of readings to return
@@ -176,6 +177,28 @@ class SensorReadingService:
 
         logger.info(f"Marked {synced_count}/{len(readings)} readings as synced")
         return synced_count
+
+    def mark_reading_as_synced(self, reading: SensorReading) -> bool:
+        """
+        Mark a single reading as synced
+
+        Args:
+            reading: Reading to mark as synced
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            reading.mark_as_synced()
+            self.sensor_reading_repository.update(reading)
+            logger.debug(f"Reading {reading.id} marked as synced")
+            return True
+        except Exception as e:
+            logger.error(
+                f"Error marking reading {reading.id} as synced: {e}",
+                exc_info=True
+            )
+            return False
 
     def get_readings_by_container(
             self,
