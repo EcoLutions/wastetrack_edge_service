@@ -79,18 +79,12 @@ class Container:
 
         # Event Handlers (for MQTT Backend events)
         self.device_event_handler = DeviceEventHandler(self.device_repository)
-        self.container_config_handler = ContainerConfigHandler(
-            self.container_config_repository
-        )
+
 
         # MQTT Infrastructure
         self.mqtt_publisher = MqttPublisher(self.mqtt_manager)
         self.device_status_publisher = DeviceStatusPublisher(self.mqtt_manager)
-        self.mqtt_subscriber = MqttSubscriber(
-            self.mqtt_manager,
-            self.device_event_handler,
-            self.container_config_handler
-        )
+
 
         # Bluetooth Polling Service
         self.bluetooth_polling_service = BluetoothPollingService(
@@ -99,6 +93,24 @@ class Container:
             self.container_config_service,
             self.mqtt_publisher,
             self.device_status_publisher
+        )
+
+        # Background Workers
+        self.bluetooth_polling_worker = BluetoothPollingWorker(
+            self.bluetooth_polling_service,
+            self.device_config_loader,
+            self.device_repository
+        )
+
+        self.container_config_handler = ContainerConfigHandler(
+            self.container_config_repository,
+            self.bluetooth_polling_worker
+        )
+
+        self.mqtt_subscriber = MqttSubscriber(
+            self.mqtt_manager,
+            self.device_event_handler,
+            self.container_config_handler
         )
 
         # Bluetooth Message Handlers (for unsolicited ESP32 messages)
@@ -116,11 +128,7 @@ class Container:
             self.mqtt_publisher
         )
 
-        # Background Workers
-        self.bluetooth_polling_worker = BluetoothPollingWorker(
-            self.bluetooth_polling_service,
-            self.device_config_loader
-        )
+
 
         logger.info("Application container initialized")
 
