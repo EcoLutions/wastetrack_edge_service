@@ -13,6 +13,7 @@ from src.shared.infrastructure.bluetooth import (
     SerialClient,
     BluetoothCommandSender
 )
+from src.shared.infrastructure.bluetooth.serial_port_manager import SerialPortManager
 from .container_config_service import ContainerConfigService
 from .device_service import DeviceService
 
@@ -66,11 +67,11 @@ class BluetoothPollingService:
         1. Connect to device via Bluetooth
         2. Ping device to check if alive
         3. If alive:
-           - Request current reading
-           - Process reading
-           - Mark device online (if was offline)
+            - Request current reading
+            - Process reading
+            - Mark device online (if was offline)
         4. If not alive:
-           - Mark device offline (if was online)
+            - Mark device offline (if was online)
         5. Disconnect
 
         Args:
@@ -84,56 +85,63 @@ class BluetoothPollingService:
 
         logger.info(f"Polling device: {device_identifier} ({port})")
 
-        # Create serial client
-        serial_client = SerialClient(port)
-        command_sender = BluetoothCommandSender(serial_client)
-
-        try:
-            # Step 1: Connect
-            if not serial_client.connect():
-                logger.warning(f"Failed to connect to {device_identifier}")
+        manager = SerialPortManager()
+        with manager.get_connection(port) as adapter:
+            if not adapter:
+                logger.warning(f"No se pudo obtener conexión a {device_identifier} ({port})")
                 self._handle_device_offline(bluetooth_device)
                 return False
 
-            # Step 2: Ping device
-            logger.debug(f"Pinging {device_identifier}...")
-            if not command_sender.ping():
-                logger.warning(f"Ping failed for {device_identifier}")
+            command_sender = BluetoothCommandSender(adapter)
+
+            try:
+                # Step 1: Connect (adapter.connect() es no-op si el puerto ya está abierto)
+                if not adapter.connect():
+                    logger.warning(f"Failed to connect to {device_identifier}")
+                    self._handle_device_offline(bluetooth_device)
+                    return False
+
+                # Step 2: Ping device
+                logger.debug(f"Pinging {device_identifier}...")
+                if not command_sender.ping():
+                    logger.warning(f"Ping failed for {device_identifier}")
+                    self._handle_device_offline(bluetooth_device)
+                    return False
+
+                logger.debug(f"Ping successful for {device_identifier}")
+
+                # Step 3: Request current reading
+                logger.debug(f"Requesting reading from {device_identifier}...")
+                reading_data = command_sender.request_current_reading()
+
+                if not reading_data:
+                    logger.warning(f"No reading data from {device_identifier}")
+                    self._handle_device_offline(bluetooth_device)
+                    return False
+
+                # Step 4: Process reading
+                success = self._process_reading(device_identifier, reading_data)
+
+                if success:
+                    # Step 5: Mark device online
+                    self._handle_device_online(bluetooth_device)
+
+                return success
+
+            except Exception as e:
+                logger.error(
+                    f"Error polling device {device_identifier}: {e}",
+                    exc_info=True
+                )
                 self._handle_device_offline(bluetooth_device)
-                serial_client.disconnect()
                 return False
 
-            logger.debug(f"Ping successful for {device_identifier}")
+            finally:
+                try:
+                    adapter.disconnect()
+                except Exception:
+                    logger.debug("adapter.disconnect() raised while cleaning up", exc_info=True)
 
-            # Step 3: Request current reading
-            logger.debug(f"Requesting reading from {device_identifier}...")
-            reading_data = command_sender.request_current_reading()
-
-            if not reading_data:
-                logger.warning(f"No reading data from {device_identifier}")
-                self._handle_device_offline(bluetooth_device)
-                serial_client.disconnect()
-                return False
-
-            # Step 4: Process reading
-            success = self._process_reading(device_identifier, reading_data)
-
-            if success:
-                # Step 5: Mark device online
-                self._handle_device_online(bluetooth_device)
-
-            return success
-
-        except Exception as e:
-            logger.error(
-                f"Error polling device {device_identifier}: {e}",
-                exc_info=True
-            )
-            self._handle_device_offline(bluetooth_device)
-            return False
-
-        finally:
-            serial_client.disconnect()
 
     def _process_reading(
             self,
@@ -243,11 +251,11 @@ class BluetoothPollingService:
             if reading.is_alert:
                 # Publish alert
                 mqtt_published = self.mqtt_publisher.publish_alert(reading)
-                logger.info(f"🚨 Alert published to MQTT: {mqtt_published}")
+                logger.info(f" Alert published to MQTT: {mqtt_published}")
             else:
                 # Publish normal reading
                 mqtt_published = self.mqtt_publisher.publish_reading_batch([reading])
-                logger.info(f"📊 Normal reading published to MQTT: {mqtt_published}")
+                logger.info(f" Normal reading published to MQTT: {mqtt_published}")
 
             # Step 8: Mark as synced if MQTT publish was successful
             if mqtt_published:
@@ -311,7 +319,7 @@ class BluetoothPollingService:
 
         # Publish event only if device was offline
         if was_offline:
-            logger.info(f"🟢 Device came ONLINE: {bluetooth_device.device_identifier}")
+            logger.info(f" Device came ONLINE: {bluetooth_device.device_identifier}")
 
             # Get device from database to get device_id
             device = self.device_service.get_device_by_identifier(
@@ -339,7 +347,7 @@ class BluetoothPollingService:
         # Publish event only if device was online
         if was_online:
             logger.warning(
-                f"🔴 Device went OFFLINE: {bluetooth_device.device_identifier} "
+                f" Device went OFFLINE: {bluetooth_device.device_identifier} "
                 f"(failures: {bluetooth_device.consecutive_failures})"
             )
 
@@ -356,11 +364,7 @@ class BluetoothPollingService:
                     consecutive_failures=bluetooth_device.consecutive_failures
                 )
 
-    def send_threshold_config(
-            self,
-            bluetooth_device: BluetoothDevice,
-            threshold: float
-    ) -> bool:
+    def send_threshold_config(self, bluetooth_device, threshold) -> bool:
         """
         Send threshold configuration to device
 
@@ -374,37 +378,24 @@ class BluetoothPollingService:
         port = bluetooth_device.port
         device_identifier = bluetooth_device.device_identifier
 
-        logger.info(
-            f"Sending threshold config to {device_identifier}: {threshold}%"
-        )
-
-        serial_client = SerialClient(port)
-        command_sender = BluetoothCommandSender(serial_client)
-
-        try:
-            if not serial_client.connect():
-                logger.error(f"Failed to connect to {device_identifier}")
+        manager = SerialPortManager()
+        with manager.get_connection(port) as adapter:
+            if not adapter:
+                logger.error(f"No se pudo obtener conexión a {port}")
                 return False
 
-            success = command_sender.set_threshold(threshold)
+            command_sender = BluetoothCommandSender(adapter)
+            try:
+                success = command_sender.set_threshold(threshold)
+                if success:
+                    logger.info(f" Threshold config sent to {device_identifier}")
+                else:
+                    logger.error(f" Failed to send threshold to {device_identifier}")
+                return success
 
-            if success:
-                logger.info(
-                    f"✅ Threshold config sent to {device_identifier}"
-                )
-            else:
+            except Exception as e:
                 logger.error(
-                    f"❌ Failed to send threshold to {device_identifier}"
+                    f"Error sending threshold to {device_identifier}: {e}",
+                    exc_info=True
                 )
-
-            return success
-
-        except Exception as e:
-            logger.error(
-                f"Error sending threshold to {device_identifier}: {e}",
-                exc_info=True
-            )
-            return False
-
-        finally:
-            serial_client.disconnect()
+                return False
