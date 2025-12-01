@@ -69,11 +69,11 @@ class DeviceStatusPublisher:
 
             if success:
                 logger.info(
-                    f"✅ Device ONLINE event published: {device_identifier}"
+                    f" Device ONLINE event published: {device_identifier}"
                 )
             else:
                 logger.warning(
-                    f"❌ Failed to publish device ONLINE event: {device_identifier}"
+                    f" Failed to publish device ONLINE event: {device_identifier}"
                 )
 
             return success
@@ -123,12 +123,12 @@ class DeviceStatusPublisher:
 
             if success:
                 logger.warning(
-                    f"⚠️  Device OFFLINE event published: {device_identifier} "
+                    f"⚠  Device OFFLINE event published: {device_identifier} "
                     f"(failures: {consecutive_failures})"
                 )
             else:
                 logger.error(
-                    f"❌ Failed to publish device OFFLINE event: {device_identifier}"
+                    f" Failed to publish device OFFLINE event: {device_identifier}"
                 )
 
             return success
