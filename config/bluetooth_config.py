@@ -18,7 +18,7 @@ class BluetoothConfig:
     WRITE_TIMEOUT = 2
 
     # Polling
-    POLLING_INTERVAL = int(os.getenv('BLUETOOTH_POLLING_INTERVAL', 10))
+    POLLING_INTERVAL = int(os.getenv('BLUETOOTH_POLLING_INTERVAL', 5))
     CONFIG_RELOAD_CYCLES = int(os.getenv('BLUETOOTH_CONFIG_RELOAD_CYCLES', 5))
 
     # Retry logic
