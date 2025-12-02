@@ -120,6 +120,8 @@ class BluetoothPollingWorker:
                         if not self.running:
                             break
 
+                        self._process_command_queue([device])
+
                         try:
                             self.bluetooth_polling_service.poll_device(device)
                         except Exception as e:
@@ -133,7 +135,7 @@ class BluetoothPollingWorker:
                 )
 
                 # Sleep until next cycle
-                self._sleep_until_next_cycle()
+                self._sleep_until_next_cycle(devices)
 
             except Exception as e:
                 logger.error(
@@ -233,12 +235,17 @@ class BluetoothPollingWorker:
                 except Exception:
                     pass
 
-    def _sleep_until_next_cycle(self):
+    def _sleep_until_next_cycle(self, devices=None):
         """Sleep until next polling cycle, allowing quick shutdown"""
         elapsed = 0
         interval = BluetoothConfig.POLLING_INTERVAL
 
         while elapsed < interval and self.running:
+            if devices:
+                try:
+                    self._process_command_queue(devices)
+                except Exception:
+                    logger.exception("Error processing command queue during sleep")
             time.sleep(0.5)
             elapsed += 0.5
 

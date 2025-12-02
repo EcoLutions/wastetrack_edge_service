@@ -23,8 +23,6 @@ class SensorReadingModel(BaseModel):
     device_id = ForeignKeyField(DeviceModel, backref='sensor_readings', on_delete='CASCADE')
     container_id = CharField(max_length=36, index=True)  # UUID
     fill_level_percentage = FloatField()
-    temperature_celsius = FloatField()
-    battery_level_percentage = FloatField()
     recorded_at = DateTimeField(index=True)  # When sensor took the reading
     received_at = DateTimeField()  # When Edge received it
     synced_to_backend = BooleanField(default=False, index=True)
@@ -71,8 +69,6 @@ class SensorReadingRepository:
                 device_id=reading.device_id,
                 container_id=reading.container_id,
                 fill_level_percentage=reading.fill_level_percentage,
-                temperature_celsius=reading.temperature_celsius,
-                battery_level_percentage=reading.battery_level_percentage,
                 recorded_at=reading.recorded_at,
                 received_at=reading.received_at,
                 synced_to_backend=reading.synced_to_backend,
@@ -258,8 +254,6 @@ class SensorReadingRepository:
             device_id=model.device_id.device_id,  # Get device_id from FK
             container_id=model.container_id,
             fill_level_percentage=model.fill_level_percentage,
-            temperature_celsius=model.temperature_celsius,
-            battery_level_percentage=model.battery_level_percentage,
             recorded_at=model.recorded_at,
             received_at=model.received_at,
             synced_to_backend=model.synced_to_backend,

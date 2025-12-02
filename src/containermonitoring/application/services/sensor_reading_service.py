@@ -107,8 +107,6 @@ class SensorReadingService:
                 device_id=device.device_id,
                 container_id=container_id,
                 fill_level_percentage=fill_level_percentage,
-                temperature_celsius=temperature_celsius,
-                battery_level_percentage=battery_level_percentage,
                 recorded_at=recorded_at,
                 is_alert=is_alert,
                 alert_type=alert_type

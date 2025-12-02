@@ -187,11 +187,11 @@ class SensorReadingController:
             if reading.is_alert:
                 # Publish alert
                 mqtt_published = self.mqtt_publisher.publish_alert(reading)
-                logger.info(f"🚨 Alert published to MQTT: {mqtt_published}")
+                logger.info(f"Alert published to MQTT: {mqtt_published}")
             else:
                 # Publish normal reading (immediately, not batched)
                 mqtt_published = self.mqtt_publisher.publish_reading_batch([reading])
-                logger.info(f"📊 Normal reading published to MQTT: {mqtt_published}")
+                logger.info(f"Normal reading published to MQTT: {mqtt_published}")
 
             # Mark as synced if MQTT publish was successful
             if mqtt_published:

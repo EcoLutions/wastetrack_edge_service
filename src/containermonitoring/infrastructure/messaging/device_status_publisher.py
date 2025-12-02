@@ -123,7 +123,7 @@ class DeviceStatusPublisher:
 
             if success:
                 logger.warning(
-                    f"⚠  Device OFFLINE event published: {device_identifier} "
+                    f"  Device OFFLINE event published: {device_identifier} "
                     f"(failures: {consecutive_failures})"
                 )
             else:

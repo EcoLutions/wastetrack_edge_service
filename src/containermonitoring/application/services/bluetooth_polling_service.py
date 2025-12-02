@@ -231,8 +231,6 @@ class BluetoothPollingService:
                 device_id=device.device_id,
                 container_id=container_id,
                 fill_level_percentage=fill_percentage,
-                temperature_celsius=25.0,  # Default (ESP32 doesn't send)
-                battery_level_percentage=90.0,  # Default (ESP32 doesn't send)
                 recorded_at=recorded_at,
                 is_alert=is_alert,
                 alert_type=alert_type
@@ -251,11 +249,11 @@ class BluetoothPollingService:
             if reading.is_alert:
                 # Publish alert
                 mqtt_published = self.mqtt_publisher.publish_alert(reading)
-                logger.info(f" Alert published to MQTT: {mqtt_published}")
+                logger.info(f"Alert published to MQTT from BTReading: {mqtt_published}")
             else:
                 # Publish normal reading
                 mqtt_published = self.mqtt_publisher.publish_reading_batch([reading])
-                logger.info(f" Normal reading published to MQTT: {mqtt_published}")
+                logger.info(f"Normal reading published to MQTT from BTReading: {mqtt_published}")
 
             # Step 8: Mark as synced if MQTT publish was successful
             if mqtt_published:
