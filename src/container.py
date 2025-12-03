@@ -99,7 +99,8 @@ class Container:
         self.bluetooth_polling_worker = BluetoothPollingWorker(
             self.bluetooth_polling_service,
             self.device_config_loader,
-            self.device_repository
+            self.device_repository,
+            self.container_config_repository
         )
 
         self.container_config_handler = ContainerConfigHandler(

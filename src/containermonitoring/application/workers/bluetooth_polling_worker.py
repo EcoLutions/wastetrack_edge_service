@@ -6,7 +6,7 @@ import queue
 
 from config.bluetooth_config import BluetoothConfig
 from src.containermonitoring.application.services import BluetoothPollingService
-from src.containermonitoring.infrastructure.persistence import DeviceRepository
+from src.containermonitoring.infrastructure.persistence import DeviceRepository, ContainerConfigRepository
 from src.shared.infrastructure.bluetooth import (
     DeviceConfigLoader
 )
@@ -23,7 +23,8 @@ class BluetoothPollingWorker:
             self,
             bluetooth_polling_service: BluetoothPollingService,
             device_config_loader: DeviceConfigLoader,
-            device_repository: DeviceRepository
+            device_repository: DeviceRepository,
+            container_config_repository: ContainerConfigRepository
     ):
         """
         Initialize worker
@@ -35,6 +36,7 @@ class BluetoothPollingWorker:
         self.bluetooth_polling_service = bluetooth_polling_service
         self.device_config_loader = device_config_loader
         self.device_repository = device_repository
+        self.container_config_repository = container_config_repository
 
         self.running = False
         self.thread = None
@@ -91,6 +93,86 @@ class BluetoothPollingWorker:
 
         # Initial load
         devices = self.device_config_loader.load_devices(force_reload=True)
+
+        try:
+            latest = self.container_config_repository.get_latest_for_send_threshold()
+        except Exception:
+            logger.exception("Error obteniendo el último container config para send_threshold")
+            latest = None
+
+        if latest:
+            device_id, threshold = latest
+
+            bDevice = None
+
+            try:
+                db_device = self.device_repository.find_by_id(device_id)
+            except Exception:
+                logger.exception("Error looking up device in repository")
+                db_device = None
+
+            db_identifier = None
+            if db_device is not None:
+                if isinstance(db_device, dict):
+                    db_identifier = (
+                            db_device.get("device_identifier")
+                            or db_device.get("deviceIdentifier")
+                            or db_device.get("id")
+                    )
+                else:
+                    db_identifier = (
+                            getattr(db_device, "device_identifier", None)
+                            or getattr(db_device, "deviceIdentifier", None)
+                            or getattr(db_device, "id", None)
+                    )
+
+            # Buscar en devices usando preferentemente db_identifier, si no usar queued_device_id
+            if devices:
+                for d in devices:
+                    if isinstance(d, dict):
+                        d_identifier = (
+                                d.get("deviceIdentifier")
+                                or d.get("device_identifier")
+                                or d.get("id")
+                        )
+                    else:
+                        d_identifier = (
+                                getattr(d, "deviceIdentifier", None)
+                                or getattr(d, "device_identifier", None)
+                                or getattr(d, "id", None)
+                        )
+
+                    if d_identifier is None:
+                        continue
+
+                    # comparar como strings; preferir match con db_identifier si existe
+                    if db_identifier is not None:
+                        if str(d_identifier) == str(db_identifier) or str(db_identifier) in str(
+                                d_identifier) or str(d_identifier) in str(db_identifier):
+                            bDevice = d
+                            break
+                    else:
+                        # fallback: comparar con queued_device_id (igual o parcial)
+                        if str(d_identifier) == str(device_id) or str(device_id) in str(
+                                d_identifier) or str(d_identifier) in str(device_id):
+                            bDevice = d
+                            break
+
+            if not bDevice:
+                id_for_log = db_identifier if db_identifier is not None else device_id
+                logger.exception(f"send_threshold_config: device not found in config: {id_for_log}")
+
+            if bDevice:
+                try:
+                    success = self.bluetooth_polling_service.send_threshold_config(bDevice, threshold)
+                    logger.info(f"Initial send_threshold_config returned: {success}")
+                except Exception:
+                    logger.exception("Error enviando threshold config inicial")
+            else:
+                logger.warning(
+                    f"Initial send_threshold_config: device not found in loaded devices for id {device_id}"
+                )
+
 
         while self.running:
             try:
