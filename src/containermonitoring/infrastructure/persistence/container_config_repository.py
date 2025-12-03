@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from datetime import datetime
 from peewee import CharField, FloatField, DateTimeField
 from src.shared.infrastructure.database import BaseModel, database
@@ -200,3 +200,42 @@ class ContainerConfigRepository:
             sensor_id=model.sensor_id,
             last_sync_at=model.last_sync_at
         )
+
+    def get_latest(self) -> Optional[ContainerConfig]:
+        """
+        Devuelve el ContainerConfig más reciente ordenando por `last_sync_at`.
+        """
+        try:
+            query = ContainerConfigModel.select().order_by(ContainerConfigModel.last_sync_at.desc()).limit(1)
+            model = next(iter(query), None)
+            if model is None:
+                logger.debug("No se encontró ningún ContainerConfig al solicitar el más reciente")
+                return None
+            return self._to_aggregate(model)
+        except Exception as e:
+            logger.error(f"Error obteniendo el ContainerConfig más reciente: {e}", exc_info=True)
+            raise
+
+
+    def get_latest_for_send_threshold(self) -> Optional[Tuple[str, float]]:
+        """
+        Extrae `(device_id, threshold)` del registro más reciente.
+        Prioriza `sensor_id` como identificador de dispositivo; si no existe usa `container_id`.
+        Devuelve None si falta información válida.
+        """
+        latest = self.get_latest()
+        if latest is None:
+            return None
+
+        device_id = latest.sensor_id or latest.container_id
+        if not device_id:
+            logger.warning("Último ContainerConfig no tiene sensor_id ni container_id válidos")
+            return None
+
+        try:
+            threshold = float(latest.max_fill_level_threshold)
+        except (TypeError, ValueError):
+            logger.warning(f"Umbral inválido en el último ContainerConfig para dispositivo {device_id}")
+            return None
+
+        return device_id, threshold
