@@ -1,8 +1,13 @@
 import logging
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
+
 from src.containermonitoring.domain.model.events import ContainerConfigUpdatedEvent
 from src.containermonitoring.domain.model.aggregates import ContainerConfig
 from src.containermonitoring.infrastructure.persistence import ContainerConfigRepository
+
+if TYPE_CHECKING:
+    from src.containermonitoring.application.workers import BluetoothPollingWorker
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +26,7 @@ class ContainerConfigHandler:
     - Handle errors gracefully
     """
 
-    def __init__(self, container_config_repository: ContainerConfigRepository):
+    def __init__(self, container_config_repository: ContainerConfigRepository, polling_worker: 'BluetoothPollingWorker'):
         """
         Initialize handler with dependencies
 
@@ -29,6 +34,7 @@ class ContainerConfigHandler:
             container_config_repository: Repository for container config persistence
         """
         self.container_config_repository = container_config_repository
+        self.polling_worker = polling_worker
 
     def handle_config_updated(self, topic: str, payload: dict) -> None:
         """
@@ -88,8 +94,14 @@ class ContainerConfigHandler:
                         occurred_at=event.occurred_at
                     )
                     self.container_config_repository.save(updated_config)
+                    self.polling_worker.enqueue_send_threshold_config(
+                        updated_config.sensor_id, updated_config.max_fill_level_threshold
+                    )
                 else:
                     self.container_config_repository.save(existing_config)
+                    self.polling_worker.enqueue_send_threshold_config(
+                        existing_config.sensor_id, existing_config.max_fill_level_threshold
+                    )
 
                 logger.info(
                     f"ContainerConfig updated: {event.container_id} "
@@ -109,6 +121,9 @@ class ContainerConfigHandler:
                 )
 
                 self.container_config_repository.save(config)
+                self.polling_worker.enqueue_send_threshold_config(
+                    config.sensor_id, config.max_fill_level_threshold
+                )
 
                 logger.info(
                     f"ContainerConfig created: {config.container_id} "

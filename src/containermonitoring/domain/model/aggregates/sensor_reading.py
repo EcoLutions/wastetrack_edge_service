@@ -6,8 +6,6 @@ from enum import Enum
 
 class AlertType(Enum):
     FULL_CONTAINER = "FULL_CONTAINER"
-    LOW_BATTERY = "LOW_BATTERY"
-    HIGH_TEMPERATURE = "HIGH_TEMPERATURE"
     NONE = "NONE"
 
 @dataclass
@@ -18,8 +16,6 @@ class SensorReading:
     device_id: str
     container_id: str
     fill_level_percentage: float
-    temperature_celsius: float
-    battery_level_percentage: float
     recorded_at: datetime
     received_at: datetime
     synced_to_backend: bool
@@ -43,18 +39,12 @@ class SensorReading:
                 f"got {self.fill_level_percentage}"
             )
 
-        if not (0 <= self.battery_level_percentage <= 100):
-            raise ValueError(
-                f"battery_level_percentage must be between 0 and 100, "
-                f"got {self.battery_level_percentage}"
-            )
-
         # If it does not have synced_at and is marked as synchronized, use now
         if self.synced_to_backend and self.synced_at is None:
             self.synced_at = datetime.now()
 
     @staticmethod
-    def from_iot_request(device_id: str, container_id: str, fill_level_percentage: float, temperature_celsius: float, battery_level_percentage: float, recorded_at: datetime, is_alert: bool, alert_type: AlertType) -> 'SensorReading':
+    def from_iot_request(device_id: str, container_id: str, fill_level_percentage: float, recorded_at: datetime, is_alert: bool, alert_type: AlertType) -> 'SensorReading':
         """
         Factory method: Creates SensorReading from IoT request
         """
@@ -62,8 +52,6 @@ class SensorReading:
             device_id=device_id,
             container_id=container_id,
             fill_level_percentage=fill_level_percentage,
-            temperature_celsius=temperature_celsius,
-            battery_level_percentage=battery_level_percentage,
             recorded_at=recorded_at,
             received_at=datetime.now(),
             synced_to_backend=False,
@@ -96,8 +84,6 @@ class SensorReading:
             'deviceId': self.device_id,
             'containerId': self.container_id,
             'fillLevelPercentage': self.fill_level_percentage,
-            'temperatureCelsius': self.temperature_celsius,
-            'batteryLevelPercentage': self.battery_level_percentage,
             'recordedAt': self.recorded_at.isoformat(),
             'receivedAt': self.received_at.isoformat(),
             'isAlert': self.is_alert,
@@ -111,8 +97,6 @@ class SensorReading:
             'device_id': self.device_id,
             'container_id': self.container_id,
             'fill_level_percentage': self.fill_level_percentage,
-            'temperature_celsius': self.temperature_celsius,
-            'battery_level_percentage': self.battery_level_percentage,
             'recorded_at': self.recorded_at.isoformat(),
             'received_at': self.received_at.isoformat(),
             'synced_to_backend': self.synced_to_backend,
@@ -123,8 +107,8 @@ class SensorReading:
 
     def __repr__(self) -> str:
         alert_indicator = " [ALERT]" if self.is_alert else ""
+        fill = f"{self.fill_level_percentage:.1f}"
         return (
-            f"SensorReading(container='{self.container_id}', "
-            f"fill={self.fill_level_percentage}%, "
-            f"temp={self.temperature_celsius}degC{alert_indicator})"
+            f"SensorReading(container={self.container_id!r}, "
+            f"fill={fill}%, device={self.device_id!r}{alert_indicator})"
         )

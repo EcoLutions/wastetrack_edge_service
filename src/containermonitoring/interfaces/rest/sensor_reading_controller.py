@@ -1,7 +1,10 @@
 import logging
 from datetime import datetime
+
 from flask import Blueprint, request, jsonify
+
 from src.containermonitoring.application.services import SensorReadingService
+from src.containermonitoring.infrastructure.messaging import MqttPublisher
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +14,7 @@ class SensorReadingController:
     REST API Controller for Sensor Readings
 
     Provides endpoints for IoT devices to submit sensor data.
+    Publishes ALL readings immediately to MQTT (no batch worker).
 
     Endpoints:
     - POST /api/v1/sensor-readings - Submit a new sensor reading
@@ -18,14 +22,20 @@ class SensorReadingController:
     - GET /api/v1/sensor-readings/alerts - Get recent alerts (debugging)
     """
 
-    def __init__(self, sensor_reading_service: SensorReadingService):
+    def __init__(
+            self,
+            sensor_reading_service: SensorReadingService,
+            mqtt_publisher: MqttPublisher
+    ):
         """
         Initialize controller with dependencies
 
         Args:
             sensor_reading_service: Service for processing readings
+            mqtt_publisher: Publisher for immediate MQTT publishing
         """
         self.sensor_reading_service = sensor_reading_service
+        self.mqtt_publisher = mqtt_publisher
         self.blueprint = Blueprint('sensor_readings', __name__)
         self._register_routes()
 
@@ -56,7 +66,8 @@ class SensorReadingController:
         """
         POST /api/v1/sensor-readings
 
-        Submit a new sensor reading from an IoT device
+        Submit a new sensor reading from IoT device
+        Publishes IMMEDIATELY to MQTT (alert or normal)
 
         Request Headers:
             X-Device-Identifier: string (required) - Device identifier for auth
@@ -64,15 +75,15 @@ class SensorReadingController:
         Request Body (JSON):
         {
             "deviceIdentifier": "SENSOR-001",
-            "containerId": "660e8400-e29b-41d4-a716-446655440000",
+            "containerId": "660e8400-e29b-41d4-a716-446,655,440,000",
             "fillLevelPercentage": 85.5,
             "temperatureCelsius": 23.0,
             "batteryLevelPercentage": 78.0,
-            "recordedAt": "2025-01-15T10:30:00" Optional, defaults to now
+            "recordedAt": "2025-01-15T10:30:00"
         }
 
         Response:
-        - 201 Created: Reading processed successfully
+        - 201 Created: Reading processed and published to MQTT
         - 400 Bad Request: Invalid request data
         - 401 Unauthorized: Device not authenticated
         - 500 Internal Server Error: Processing failed
@@ -171,9 +182,25 @@ class SensorReadingController:
                         'error': message
                     }), 500
 
+            # Publish IMMEDIATELY to MQTT (alert or normal)
+            mqtt_published = False
+            if reading.is_alert:
+                # Publish alert
+                mqtt_published = self.mqtt_publisher.publish_alert(reading)
+                logger.info(f"Alert published to MQTT: {mqtt_published}")
+            else:
+                # Publish normal reading (immediately, not batched)
+                mqtt_published = self.mqtt_publisher.publish_reading_batch([reading])
+                logger.info(f"Normal reading published to MQTT: {mqtt_published}")
+
+            # Mark as synced if MQTT publish was successful
+            if mqtt_published:
+                self.sensor_reading_service.mark_reading_as_synced(reading)
+
             # Success response
             return jsonify({
                 'message': 'Reading processed successfully',
+                'mqtt_published': mqtt_published,
                 'reading': {
                     'id': reading.id,
                     'deviceId': reading.device_id,
@@ -200,11 +227,11 @@ class SensorReadingController:
 
         Get count of readings pending sync to Backend
 
-        Useful for monitoring/debugging
+        Note: Without a background worker, this shows readings that failed MQTT to publish
 
         Response:
         {
-            "pendingCount": 42
+            "pendingCount": 0
         }
         """
         try:
@@ -231,16 +258,7 @@ class SensorReadingController:
 
         Response:
         {
-            "alerts": [
-                {
-                    "id": 123,
-                    "deviceId": "...",
-                    "containerId": "...",
-                    "fillLevelPercentage": 95.0,
-                    "recordedAt": "2025-01-15T10:30:00",
-                    "alertType": "FULL_CONTAINER"
-                },
-            ],
+            "alerts": [...],
             "count": 5
         }
         """
